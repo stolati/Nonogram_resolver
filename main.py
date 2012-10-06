@@ -22,6 +22,7 @@ class Cell:
   def setState(self, state): self.state = state
   def getState(self, state): return self.state
 
+  #def __str__(self): return {CellState.UNKNOWN:'X', CellState.EMPTY:'.', CellState.FULL:'.'}[self.state]
   def __str__(self): return {CellState.UNKNOWN:'.', CellState.EMPTY:'_', CellState.FULL:'X'}[self.state]
   def __repr__(self): return str(self)
 
@@ -162,6 +163,9 @@ class LineCol:
 
 
 
+
+
+
 class ArrayField:
   """Represent the full array, list of lines and collumns"""
 
@@ -176,19 +180,29 @@ class ArrayField:
         for i in range(len(self.field[0]))
     ]
 
-  def loopOne(self):
-    changed = False
-    for c in self.cols:
-      if c.test_next():
-        res = True
-        print(self)
-        input()
+  def loopOn(self, hook_obj):
+    changed = True
+    hook_obj.begin(self)
 
-    for l in self.lines:
-      if l.test_next():
-        res = True
-        print(self)
-        input()
+    while changed:
+
+      changed = False
+      for c in self.cols:
+        if c.test_next():
+          hook_obj.changed(self)
+          changed = True
+      hook_obj.done_cols(self)
+      if changed == False: break
+
+      changed = False
+      for l in self.lines:
+        if l.test_next():
+          hook_obj.changed(self)
+          changed = True
+      hook_obj.done_lines(self)
+
+    hook_obj.end(self)
+
 
   def __str__(self):
     res = ''
@@ -235,8 +249,37 @@ class SpecReader:
 
 
 
+class loopHook:
+  def begin(self, arrField): pass
+  def end(self, arrField): pass
+  def changed(self, arrField): pass
+  def done_cols(self, arrField): pass
+  def changed(self, arrField): pass
+  def done_lines(self, arrField): pass
 
 
+class loopHookKeyboard(loopHook):
+  def _act(self, arrField):
+    print(arrField)
+    input()
+
+  def begin(self, arrField):  self._act(arrField)
+  def changed(self, arrField): self._act(arrField)
+
+
+class loopHookKeyboardBigStep(loopHook):
+
+  def _act(self, arrField, els):
+    print('step','=', els)
+    print(arrField)
+    input()
+
+  def begin(self, arrField):  self._act(arrField, 'begin')
+  def done_cols(self, arrField): self._act(arrField, 'lines')
+  def done_lines(self, arrField): self._act(arrField, 'cols')
+
+class loopHookWhole(loopHook):
+  def end(self, arrField): print(arrField)
 
 
 if __name__ == "__main__":
@@ -245,8 +288,9 @@ if __name__ == "__main__":
 
   af = ArrayField(SpecReader(m))
 
-  while True:
-    af.loopOne()
+  af.loopOn(loopHookWhole())
+
+
   #af.loopOne()
   #af.loopOne()
   #print(af)
