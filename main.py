@@ -184,6 +184,8 @@ class ArrayField:
     changed = True
     hook_obj.begin(self)
 
+    isFirst = True #beause it should at least try to do both the first time
+
     while changed:
 
       changed = False
@@ -192,7 +194,7 @@ class ArrayField:
           hook_obj.changed(self)
           changed = True
       hook_obj.done_cols(self)
-      if changed == False: break
+      if changed == False and not isFirst : break
 
       changed = False
       for l in self.lines:
@@ -200,6 +202,8 @@ class ArrayField:
           hook_obj.changed(self)
           changed = True
       hook_obj.done_lines(self)
+
+      isFirst = False
 
     hook_obj.end(self)
 
@@ -284,12 +288,12 @@ class loopHookWhole(loopHook):
 
 if __name__ == "__main__":
   import maps
-  m = maps.map006
+  m = maps.maps["Nemo Pictures"]["medium"]
+  m = maps.maps["NonoSparks Genesis"]
 
-  af = ArrayField(SpecReader(m))
-
-  af.loopOn(loopHookWhole())
-
+  for k in sorted(m):
+    af = ArrayField(SpecReader(m[k]))
+    af.loopOn(loopHookWhole())
 
   #af.loopOne()
   #af.loopOne()
